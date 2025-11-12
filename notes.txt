@@ -1,0 +1,5 @@
+test_04 scrolling thru battles takes too long
+- i forsee some expansions wont be fully covered
+
+expansion scrolling is fixed i believe
+- test to make sure it fully cycles

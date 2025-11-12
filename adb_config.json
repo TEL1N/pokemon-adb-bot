@@ -1,0 +1,86 @@
+{
+  "auto_button": [
+    702,
+    1504
+  ],
+  "battle_button": [
+    443,
+    1371
+  ],
+  "battles_tab": [
+    617,
+    1540
+  ],
+  "solo_battle_button": [
+    666,
+    1178
+  ],
+  "difficulty_scroll": {
+    "start": [
+      454,
+      1157
+    ],
+    "end": [
+      464,
+      314
+    ]
+  },
+  "difficulty_buttons": {
+    "intermediate": [
+      464,
+      248
+    ],
+    "advanced": [
+      458,
+      619
+    ],
+    "expert": [
+      461,
+      1042
+    ]
+  },
+  "expansions_button": [
+    746,
+    506
+  ],
+  "series_buttons": {
+    "B": [
+      195,
+      1369
+    ],
+    "A": [
+      525,
+      1370
+    ]
+  },
+  "expansion_scroll": {
+    "start": [
+      481,
+      1014
+    ],
+    "end": [
+      453,
+      779
+    ]
+  },
+  "expansion_slots": [
+    [
+      461,
+      393
+    ],
+    [
+      469,
+      751
+    ],
+    [
+      459,
+      1130
+    ]
+  ],
+  "battle_list_region": [
+    470,
+    562,
+    378,
+    921
+  ]
+}
