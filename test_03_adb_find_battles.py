@@ -13,11 +13,19 @@ from adb_controller import ADBController
 
 class BattleFinderADB:
     def __init__(self, device_id=None):
-        self.controller = ADBController(device_id)  # Auto-detect if None
+        self.controller = ADBController(device_id)
         self.battle_list_region = None
         
         # Load config
         self.config = self.load_config()
+        
+        # NEW: Load reward detection region
+        if 'reward_detection_region' in self.config:
+            self.reward_detection_region = tuple(self.config['reward_detection_region'])
+            print(f"✓ Loaded reward detection region: {self.reward_detection_region}")
+        else:
+            self.reward_detection_region = None
+            print("⚠️ No reward detection region configured")
     
     def load_config(self):
         """Load calibrated coordinates"""
@@ -98,24 +106,34 @@ class BattleFinderADB:
     
     def find_reward_icons(self, screen_cv):
         """
-        Find colorful reward icons (hourglass, etc.)
-        Returns list of (x, y, area) tuples
+        Find reward icons using calibrated detection region
+        Returns list of (x, y, area) tuples in FULL SCREEN coordinates
         """
-        hsv = cv2.cvtColor(screen_cv, cv2.COLOR_BGR2HSV)
+        if not self.reward_detection_region:
+            print("  ⚠️ No reward detection region calibrated!")
+            return []
         
-        # Multiple color ranges for different reward icons
+        x, y, w, h = self.reward_detection_region
+        
+        # Crop to reward region only
+        cropped = screen_cv[y:y+h, x:x+w]
+        
+        # Convert to HSV
+        hsv = cv2.cvtColor(cropped, cv2.COLOR_BGR2HSV)
+        
+        # Simplified, more lenient color ranges
         color_ranges = [
-            # Cyan/light blue (magnifying glass)
-            ([80, 50, 150], [100, 255, 255]),
+            # Cyan/Blue (magnifying glass, hourglass)
+            ([80, 100, 150], [130, 255, 255]),
             
-            # Purple (hourglass icon)
-            ([130, 50, 100], [160, 255, 255]),
-            
-            # Blue (various icons)
-            ([100, 50, 100], [130, 255, 255]),
+            # Purple/Magenta (hourglass)
+            ([130, 100, 150], [170, 255, 255]),
             
             # Yellow/Gold
-            ([20, 50, 150], [40, 255, 255]),
+            ([15, 100, 150], [45, 255, 255]),
+            
+            # Any bright saturated color (catch-all)
+            ([0, 120, 180], [180, 255, 255])
         ]
         
         # Combine all color masks
@@ -135,39 +153,61 @@ class BattleFinderADB:
         for contour in contours:
             area = cv2.contourArea(contour)
             
-            # Filter by size (reward icons are small-medium)
-            if 200 < area < 3000:
-                x, y, w, h = cv2.boundingRect(contour)
-                center_x = x + w // 2
-                center_y = y + h // 2
+            # More lenient size filter
+            if 150 < area < 3000:
+                bx, by, bw, bh = cv2.boundingRect(contour)
                 
-                # Aspect ratio filter
-                aspect_ratio = w / h if h > 0 else 0
-                if 0.5 < aspect_ratio < 2.0:
+                # Convert to FULL SCREEN coordinates
+                center_x = x + bx + bw // 2
+                center_y = y + by + bh // 2
+                
+                # Aspect ratio check (still useful)
+                aspect_ratio = bw / bh if bh > 0 else 0
+                if 0.5 < aspect_ratio < 2.5:
                     detections.append((center_x, center_y, area))
         
         return detections
     
+    def verify_detection(self, click_pos, max_attempts=2):
+        """
+        Double-check detection by waiting and re-scanning
+        Returns verified position or None if false positive
+        """
+        print("  🔍 Verifying detection...")
+        
+        for attempt in range(max_attempts):
+            time.sleep(1.0)  # Wait for screen to settle
+            
+            # Take fresh screenshot
+            recheck_pos = self.find_battle_with_rewards()
+            
+            if not recheck_pos:
+                print(f"  ✗ Verification {attempt+1}/{max_attempts}: Not detected")
+                continue
+            
+            # Check if positions are similar (within 50px)
+            x1, y1 = click_pos
+            x2, y2 = recheck_pos
+            
+            distance = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
+            
+            if distance > 50:
+                print(f"  ✗ Verification {attempt+1}/{max_attempts}: Position changed ({distance:.0f}px)")
+                continue
+            
+            print(f"  ✓ Verification {attempt+1}/{max_attempts}: CONFIRMED")
+            return recheck_pos
+        
+        print("  ✗ Detection failed verification - FALSE POSITIVE")
+        return None
+    
     def filter_to_battle_list(self, detections):
-        """Filter detections to battle list region"""
-        if not self.battle_list_region:
-            return detections
-        
-        x, y, w, h = self.battle_list_region
-        x2 = x + w
-        y2 = y + h
-        
-        filtered = []
-        for det_x, det_y, area in detections:
-            # Check if inside region
-            if x <= det_x <= x2 and y <= det_y <= y2:
-                # Reward icons on RIGHT side of cards
-                right_threshold = x + int(w * 0.55)
-                
-                if det_x >= right_threshold:
-                    filtered.append((det_x, det_y, area))
-        
-        return filtered
+        """
+        Filter detections - but since we're using a calibrated region,
+        this is mostly a pass-through now
+        """
+        # Already filtered by using calibrated region
+        return detections
     
     def group_icons_into_battles(self, icons):
         """Group nearby icons (same battle card)"""
@@ -197,20 +237,18 @@ class BattleFinderADB:
         return clusters
     
     def get_battle_click_position(self, cluster):
-        """Calculate where to click for a battle"""
+        """
+        Calculate where to click for a battle
+        Since rewards are on the right, click DIRECTLY on the reward area
+        """
+        # Average position of all icons in cluster
         avg_x = sum(p[0] for p in cluster) // len(cluster)
         avg_y = sum(p[1] for p in cluster) // len(cluster)
         
-        # Battle card is LEFT of icons
-        click_x = avg_x - 200
+        # Click directly on the reward area (battle card extends left from here)
+        # The reward icons ARE on the battle card, so clicking them works
+        click_x = avg_x
         click_y = avg_y
-        
-        # Bounds check
-        if self.battle_list_region:
-            region_x, _, _, _ = self.battle_list_region
-            min_x = region_x + 50
-            if click_x < min_x:
-                click_x = min_x
         
         return (click_x, click_y)
     
@@ -331,10 +369,16 @@ class BattleFinderADB:
             
             # Check current view
             battle_pos = self.find_battle_with_rewards()
-            
+
             if battle_pos:
-                print(f"\n✓ FOUND battle with rewards!")
-                return battle_pos
+                # Verify it's not a false positive
+                verified_pos = self.verify_detection(battle_pos)
+                if verified_pos:
+                    print(f"\n✓ FOUND verified battle with rewards!")
+                    return verified_pos
+                else:
+                    print("  False positive detected, continuing search...")
+                    # Continue to next scroll position
             
             # Scroll down (except on last check)
             if scroll_num < max_scrolls:

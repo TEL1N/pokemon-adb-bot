@@ -1,5 +1,5 @@
 test_04 scrolling thru battles takes too long
-- i forsee some expansions wont be fully covered
+- if battles with rewards are always at the bottom we can just send a fat fast swipe, regardless the last battle will have rewards. 
 
 expansion scrolling is fixed i believe
 - test to make sure it fully cycles

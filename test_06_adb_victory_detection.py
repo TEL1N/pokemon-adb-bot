@@ -1,85 +1,51 @@
 #!/usr/bin/env python3
 """
-TEST 06: Victory Detection (ADB Version)
-Monitors for victory screen using template matching
+TEST 06: Battle End Detection (ADB Version)
+Simple and reliable: Detect FULL SCREEN white flash (single check)
 """
 
 import cv2
 import numpy as np
 import time
-from pathlib import Path
-from skimage.metrics import structural_similarity as ssim
 from adb_controller import ADBController
 
 
-TEMPLATE_PATH = "pokemon_tcg_screenshots/victory_screen.png"
-
-
-class VictoryDetectorADB:
+class BattleEndDetectorADB:
     def __init__(self, device_id=None):
         self.controller = ADBController(device_id)
-        
-        # Load template
-        self.template_color = cv2.imread(TEMPLATE_PATH)
-        if self.template_color is None:
-            raise FileNotFoundError(f"Missing template: {TEMPLATE_PATH}")
-        print(f"✓ Loaded template {TEMPLATE_PATH}, shape={self.template_color.shape}")
-        
-        # Prepare grayscale cropped template
-        self.template_gray = cv2.cvtColor(self.template_color, cv2.COLOR_BGR2GRAY)
-        self.template_crop = self._crop_focus_area(self.template_gray)
+        print("✓ Battle End Detector initialized (full screen white flash detection)")
     
-    def _crop_focus_area(self, img):
-        """Crop top 25% height and middle 60% width"""
-        h, w = img.shape
-        top, bottom = 0, int(h * 0.25)
-        left, right = int(w * 0.20), int(w * 0.80)
-        return img[top:bottom, left:right]
-    
-    def grab_gray_frame(self):
-        """Take screenshot via ADB and process it"""
-        # Take full screenshot
-        frame = self.controller.screenshot_cv()
+    def detect_full_screen_white(self, threshold=200, white_percentage=0.90):
+        """
+        Detect if ENTIRE screen is white
+        
+        Args:
+            threshold: Brightness value to count as "white" (0-255, default 200)
+            white_percentage: What % of screen must be white (default 90%)
+        
+        Returns True if full screen white detected
+        """
+        # Take FULL screenshot via ADB
+        screenshot = self.controller.screenshot_cv()
         
         # Convert to grayscale
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
         
-        # Crop focus area
-        return self._crop_focus_area(frame_gray)
+        # Count pixels above threshold (white pixels)
+        white_pixels = np.sum(gray >= threshold)
+        total_pixels = gray.size
+        
+        white_percent = white_pixels / total_pixels
+        
+        # Debug output
+        print(f"[WHITE] {white_percent*100:.1f}% white (need {white_percentage*100:.0f}%)", end="\r")
+        
+        return white_percent >= white_percentage
     
-    def detect_victory(self, threshold=0.40):
+    def monitor_battle_end(self, wait_before_start=30):
         """
-        Check if victory screen is showing
-        Returns True if detected, False otherwise
-        """
-        frame_crop = self.grab_gray_frame()
-        if frame_crop is None:
-            return False
-        
-        # Resize template to match frame
-        template_resized = cv2.resize(self.template_crop, (frame_crop.shape[1], frame_crop.shape[0]))
-        
-        # Equalize brightness
-        frame_eq = cv2.equalizeHist(frame_crop)
-        template_eq = cv2.equalizeHist(template_resized)
-        
-        # Compute SSIM
-        score, _ = ssim(frame_eq, template_eq, full=True)
-        
-        # Compute edge similarity
-        edges_frame = cv2.Canny(frame_eq, 50, 150)
-        edges_template = cv2.Canny(template_eq, 50, 150)
-        score_edges, _ = ssim(edges_frame, edges_template, full=True)
-        
-        # Combined average
-        final_score = (score + score_edges) / 2.0
-        print(f"[DEBUG] SSIM: {score:.3f}  Edge: {score_edges:.3f}  Avg: {final_score:.3f}", end="\r")
-        
-        return final_score >= threshold
-    
-    def monitor_victory_screen(self, wait_before_start=30):
-        """
-        Monitor for victory screen
+        Monitor for battle end using full screen white detection
+        Single check - no verification needed (no false positives during battle)
         wait_before_start: Seconds to wait before starting monitoring
         """
         print(f"\nWaiting {wait_before_start} seconds before monitoring starts...")
@@ -87,13 +53,25 @@ class VictoryDetectorADB:
             print(f"Starting in {i}s...", end="\r")
             time.sleep(1)
         
-        print("\n--- Monitoring for Victory screen ---")
+        print("\n--- Monitoring for Battle End (Full Screen White) ---")
+        print("Detection: ENTIRE screen turns white → Battle ended")
+        print("Single check (no false positives during battle)\n")
         
+        check_count = 0
         while True:
             try:
-                if self.detect_victory():
-                    print("\n✓ Victory detected!")
+                check_count += 1
+                
+                # Check for full screen white - if detected, battle is over!
+                if self.detect_full_screen_white(threshold=200, white_percentage=0.90):
+                    print(f"\n✓✓✓ FULL SCREEN WHITE DETECTED (check #{check_count})")
+                    print("✓✓✓ BATTLE END CONFIRMED!")
                     return True
+                
+                # Print periodic status (every 10 seconds)
+                if check_count % 20 == 0:
+                    print(f"\n[Check #{check_count}] Still monitoring...")
+                
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 print("\nStopped by user")
@@ -102,18 +80,23 @@ class VictoryDetectorADB:
 
 def main():
     print("="*60)
-    print("POKEMON TCG ADB - TEST 06: VICTORY DETECTION")
+    print("POKEMON TCG ADB - TEST 06: BATTLE END DETECTION")
     print("="*60)
+    
+    print("\nSimple Full Screen White Detection:")
+    print("  - Detects when ENTIRE screen turns white")
+    print("  - Single check (instant detection)")
+    print("  - Works for both victory and defeat")
     
     print("\nSetup:")
     print("  1. Start a battle in the emulator")
     print("  2. Let it run (AUTO should be on)")
-    print("  3. This script will detect when you win")
+    print("  3. This script will detect when battle ends")
     
     input("\nPress ENTER to start monitoring...")
     
-    detector = VictoryDetectorADB()
-    detector.monitor_victory_screen(wait_before_start=30)
+    detector = BattleEndDetectorADB()
+    detector.monitor_battle_end(wait_before_start=30)
 
 
 if __name__ == "__main__":

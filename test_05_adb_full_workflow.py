@@ -45,58 +45,45 @@ class RewardBattleBotADB:
             with open('adb_config.json', 'r') as f:
                 config = json.load(f)
                 print("✓ Loaded calibration config")
+                
+                # DEBUG: Show series button coordinates
+                if "series_buttons" in config:
+                    print(f"  Series buttons loaded:")
+                    print(f"    A-series: {config['series_buttons'].get('A')}")
+                    print(f"    B-series: {config['series_buttons'].get('B')}")
+                else:
+                    print("  ⚠️ WARNING: No series_buttons in config!")
+                
                 return config
-        except:
-            print("⚠️ No config found, run test_02 first")
+        except Exception as e:
+            print(f"⚠️ Error loading config: {e}")
             return {}
     
     # ==================== NAVIGATION ====================
     
-    def click_battles_tab(self):
-        """Navigate to battles tab"""
-        pos = tuple(self.config.get("battles_tab", (0, 0)))
-        print(f"Clicking BATTLES tab at {pos}...")
-        self.controller.tap(*pos)
-        time.sleep(2)
-    
-    def click_solo_battle(self):
-        """Click Solo Battle button"""
-        pos = tuple(self.config.get("solo_battle_button", (0, 0)))
-        print(f"Clicking SOLO BATTLE at {pos}...")
-        self.controller.tap(*pos)
-        time.sleep(2)
-    
-    def perform_difficulty_scroll(self, times=1):
-        """Scroll to reveal difficulty buttons"""
-        scroll_config = self.config.get("difficulty_scroll", {})
-        start = tuple(scroll_config.get("start", (0, 0)))
-        end = tuple(scroll_config.get("end", (0, 0)))
-        
-        for i in range(times):
-            print(f"  Difficulty scroll {i+1}/{times}")
-            self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=1000, delay=0.8)
-    
     def switch_to_difficulty(self, difficulty_name):
-        """Switch to a different difficulty"""
+        """Switch to a different difficulty (SIMPLIFIED)"""
         difficulty_buttons = self.config.get("difficulty_buttons", {})
         coords = tuple(difficulty_buttons.get(difficulty_name, (0, 0)))
         
         print(f"\n--- Switching to {difficulty_name.upper()} difficulty ---")
         
-        # Press BACK to ensure clean state
-        print("Pressing BACK to close menus...")
-        self.controller.press_back(delay=0.8)
+        # Step 1: Press BACK once to return to Solo Battles screen
+        print("  [Step 1/3] Pressing BACK to return to Solo Battles...")
+        self.controller.press_back(delay=2)
         
-        # Navigate to battles
-        self.click_battles_tab()
-        self.click_solo_battle()
+        # Step 2: Scroll down 2 times to reveal difficulties
+        print("  [Step 2/3] Scrolling to reveal difficulties...")
+        scroll_config = self.config.get("difficulty_scroll", {})
+        start = tuple(scroll_config.get("start", (0, 0)))
+        end = tuple(scroll_config.get("end", (0, 0)))
         
-        # Scroll down to reveal difficulties
-        print("Scrolling to reveal difficulties...")
-        self.perform_difficulty_scroll(times=2)
+        for i in range(2):
+            print(f"    Scroll {i+1}/2")
+            self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=1000, delay=1)
         
-        # Click difficulty
-        print(f"Clicking {difficulty_name} at {coords}...")
+        # Step 3: Click difficulty button
+        print(f"  [Step 3/3] Clicking {difficulty_name.upper()} at {coords}...")
         self.controller.tap(*coords)
         time.sleep(2)
         
@@ -119,10 +106,19 @@ class RewardBattleBotADB:
         series_buttons = self.config.get("series_buttons", {})
         coords = tuple(series_buttons.get(target_series, (0, 0)))
         
-        print(f"  Switching to {target_series}-series at {coords}...")
+        print(f"  Switching to {target_series}-series...")
+        
+        # CRITICAL: Must click expansions button FIRST to refresh the menu
+        print(f"    Step 1: Opening expansions menu...")
+        self.expansion_searcher.click_expansions_button()
+        
+        # THEN click the series button
+        print(f"    Step 2: Clicking {target_series}-series button at {coords}...")
         self.controller.tap(*coords)
         time.sleep(1.5)
+        
         self.current_series = target_series
+        print(f"  ✓ Switched to {target_series}-series")
     
     # ==================== BATTLE ENGAGEMENT ====================
     
@@ -182,21 +178,39 @@ class RewardBattleBotADB:
             
             print(f"\n  === {series_name}-series Expansion #{expansion_num} ===")
             
-            # Open expansions menu
+            # Step 1: Open expansions menu fresh (this resets the list to top)
+            print(f"    [Step 1/3] Opening expansions menu...")
             self.expansion_searcher.click_expansions_button()
             
-            # Scroll to position if needed
+            # Step 2: CRITICAL - Click the series button to switch to correct series
+            print(f"    [Step 2/3] Clicking {series_name}-series button...")
+            series_buttons = self.config.get("series_buttons", {})
+            series_coords = tuple(series_buttons.get(series_name, (0, 0)))
+            
+            if series_coords == (0, 0):
+                print(f"    ✗ ERROR: {series_name}-series button not calibrated!")
+                return None
+            
+            print(f"    Tapping {series_name}-series at {series_coords}...")
+            self.controller.tap(*series_coords)
+            time.sleep(2)  # Wait for series to switch and load
+            
+            # Step 3: Scroll to position if needed
+            print(f"    [Step 3/3] Navigating to expansion #{expansion_num}...")
             if scrolls > 0:
+                print(f"    Scrolling {scrolls} time(s)...")
                 self.expansion_searcher.perform_scroll_gesture(scrolls)
             
-            # Open expansion
+            # Step 4: Open expansion
+            print(f"    Opening expansion slot #{slot_idx + 1}...")
             opened = self.expansion_searcher.open_visible_expansion(slot_idx)
             if not opened:
                 print("  ✗ Could not open expansion")
                 self.progress.mark_checked(self.current_difficulty, series_name, expansion_num)
                 continue
             
-            # Scan inside expansion
+            # Step 5: Scan inside expansion
+            print(f"    Scanning inside expansion for rewards...")
             battle_pos = self.expansion_searcher.scan_expansion_for_rewards()
             
             if battle_pos:
@@ -238,7 +252,8 @@ class RewardBattleBotADB:
         
         # Check A-series
         if not a_exhausted:
-            self.ensure_series("A")
+            print(f"\n--- Checking A-series ---")
+            self.current_series = "A"  # Update state
             battle_pos = self.scan_series_for_rewards("A", EXPANSION_COUNTS["A"])
             if battle_pos:
                 return battle_pos
@@ -247,7 +262,8 @@ class RewardBattleBotADB:
         
         # Check B-series
         if not b_exhausted:
-            self.ensure_series("B")
+            print(f"\n--- Checking B-series ---")
+            self.current_series = "B"  # Update state
             battle_pos = self.scan_series_for_rewards("B", EXPANSION_COUNTS["B"])
             if battle_pos:
                 return battle_pos
@@ -256,7 +272,7 @@ class RewardBattleBotADB:
         
         # Exit expansions menu
         print(f"\n✗ No rewards in {self.current_difficulty.upper()}")
-        self.controller.press_back(delay=1)
+        
         
         return None
     
@@ -336,16 +352,18 @@ class RewardBattleBotADB:
             self.engage_battle(battle_pos)
             return
         
-        # Check all difficulties
+        # Check all difficulties in order
         difficulties = ["intermediate", "advanced", "expert"]
         start_idx = difficulties.index(self.current_difficulty) if resume_from_battle else 0
-        
+
         for i in range(start_idx, len(difficulties)):
             difficulty = difficulties[i]
             
-            # Switch difficulty if needed
-            if self.current_difficulty != difficulty:
+            # Switch difficulty if not first one AND not current difficulty
+            if difficulty != self.current_difficulty:
                 self.switch_to_difficulty(difficulty)
+            else:
+                print(f"\n--- Already on {difficulty.upper()} difficulty ---")
             
             # Check all series for this difficulty
             battle_pos = self.check_difficulty_all_series()

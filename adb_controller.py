@@ -75,6 +75,39 @@ class ADBController:
                     print(f"Invalid choice. Enter 1-{len(devices)}")
             except ValueError:
                 print("Invalid input. Enter a number.")
+            
+    @staticmethod
+    def _auto_connect():
+        """
+        Try to auto-connect to common Mumuplayer ports
+        Returns device_id if successful, None otherwise
+        """
+        common_ports = [
+            "127.0.0.1:7555",
+            "127.0.0.1:5555",
+            "127.0.0.1:5556",
+            "127.0.0.1:16384",
+            "127.0.0.1:16416"
+        ]
+        
+        for port in common_ports:
+            print(f"  Trying to connect to {port}...")
+            result = subprocess.run(
+                [ADBController.ADB_PATH, "connect", port],
+                capture_output=True,
+                text=True
+            )
+            
+            time.sleep(0.5)
+            
+            # Check if connection succeeded
+            devices = ADBController.get_all_devices()
+            if len(devices) > 0:
+                print(f"  ✓ Connected to {devices[0]}")
+                return devices[0]
+        
+        print("  ✗ Could not connect to any common port")
+        return None
     
     def __init__(self, device_id=None):
         """
@@ -82,21 +115,28 @@ class ADBController:
         
         Args:
             device_id: ADB device identifier
-                      - If None: auto-detect first device
-                      - If "select": interactive selection for multiple devices
-                      - If specific ID: use that device
+                    - If None: auto-detect first device (auto-connect if needed)
+                    - If "select": interactive selection for multiple devices
+                    - If specific ID: use that device
         """
         if device_id is None:
-            # Auto-detect first device
+            # Try to auto-detect first device
             device_id = self.get_connected_device()
+            
             if device_id is None:
-                raise ConnectionError(
-                    "No devices found!\n"
-                    "Steps to connect:\n"
-                    "  1. Open Mumuplayer\n"
-                    "  2. Run: adb connect 127.0.0.1:7555\n"
-                    "  3. Run: adb devices (to verify)"
-                )
+                # No devices found - try auto-connecting to common ports
+                print("No devices found, attempting auto-connect...")
+                device_id = self._auto_connect()
+                
+                if device_id is None:
+                    raise ConnectionError(
+                        "Failed to connect to emulator!\n"
+                        "Manual steps:\n"
+                        "  1. Open Mumuplayer\n"
+                        "  2. Run: adb connect 127.0.0.1:7555\n"
+                        "  3. Run: adb devices (to verify)"
+                    )
+            
             print(f"✓ Auto-detected device: {device_id}")
         
         elif device_id == "select":
