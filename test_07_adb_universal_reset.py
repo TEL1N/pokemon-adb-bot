@@ -26,7 +26,7 @@ class UniversalResetADB:
         for i in range(70):
             self.controller.press_back(delay=0.3)
             if (i + 1) % 10 == 0:
-                print(f"  BACK {i+1}/30")
+                print(f"  BACK {i+1}/70")
         print("✓ All menus closed")
         
         """

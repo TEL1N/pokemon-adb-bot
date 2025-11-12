@@ -99,31 +99,52 @@ class ExpansionSearcherADB:
     
     def scan_expansion_for_rewards(self):
         """
-        Scan inside an opened expansion
-        Initial check + down-scroll checks with delay
-        Returns battle position if found, else None
+        Scan inside an expansion for battles with rewards
+        OPTIMIZED: Just scroll to bottom fast (where rewards are) and check once
+        
+        Returns (x, y) click position if found, else None
         """
-        # Initial check
-        print("  Checking current view...")
-        time.sleep(0.8)  # Wait for screen to settle
-        pos = self.finder.find_battle_with_rewards()
-        if pos:
-            return pos
+        print("  Scanning expansion for rewards...")
         
-        # Down-scroll checks with slower pace
-        for i in range(MAX_DOWN_SCANS_PER_EXPANSION):
-            print(f"  Scroll check {i+1}/{MAX_DOWN_SCANS_PER_EXPANSION}...")
-            self.perform_scroll_gesture(1)
-            
-            # Wait longer for screen to settle after scroll
-            time.sleep(1.5)
-            
-            pos = self.finder.find_battle_with_rewards()
-            if pos:
-                return pos
+        # Get battle list scroll region from config
+        battle_list_region = self.config.get("battle_list_region", None)
+        if not battle_list_region:
+            print("  ⚠️ Battle list region not calibrated!")
+            return None
         
-        return None
-    
+        x, y, w, h = battle_list_region
+        
+        # Calculate scroll coordinates INSIDE the battle list
+        start_x = x + w // 2
+        start_y = y + int(h * 0.8)  # Bottom of list
+        end_x = start_x
+        end_y = y + int(h * 0.2)    # Top of list
+        
+        # OPTIMIZATION: 3 fast scrolls to bottom (no hold, pure speed)
+        print("  Fast scrolling to bottom (where rewards are)...")
+        for i in range(3):
+            print(f"    Quick scroll {i+1}/3", end="\r")
+            self.controller.swipe(
+                start_x, start_y,
+                end_x, end_y,
+                duration=200  # FAST! No hold time
+            )
+            time.sleep(0.2)  # Tiny delay between scrolls
+        
+        print("\n  Waiting for battles to settle...")
+        time.sleep(1.0)  # Let animations finish
+        
+        # Single check at bottom
+        print("  Checking for rewards at bottom...")
+        battle_pos = self.finder.find_battle_with_rewards()
+        
+        if battle_pos:
+            print(f"  ✓ REWARDS FOUND at bottom!")
+            return battle_pos
+        else:
+            print(f"  ✗ No rewards found")
+            return None
+
     # ==================== MAIN RUN ====================
     
     def run(self, max_expansions=None):
