@@ -1,5 +1,7 @@
-test_04 scrolling thru battles takes too long
-- if battles with rewards are always at the bottom we can just send a fat fast swipe, regardless the last battle will have rewards. 
+for card database:
+- cant look at the network packets to see 
+- must use cv
 
-expansion scrolling is fixed i believe
-- test to make sure it fully cycles
+for parralelization:
+email creation and log each one (for play store and maybe for saving pkmn)
+- mumuplayer script recording to use for each one and initalize 
