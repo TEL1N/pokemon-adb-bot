@@ -99,7 +99,7 @@ def run_infinite_battle_loop():
             continue
         
         try:
-            # ==================== STAGE 3: RESET TO BASE STATE ====================
+        # ==================== STAGE 3: RESET TO BASE STATE ====================
             print("\n[Stage 3/3] 🔄 Running Universal Reset Flow...")
             print("  (This takes ~90 seconds with safe delays)")
             
@@ -108,8 +108,15 @@ def run_infinite_battle_loop():
             
             # CRITICAL: Reset bot's state after universal reset
             print("\n🔄 Syncing bot state with game state...")
-            battle_bot.reset_to_beginner()
-            print("✓ Bot state synced (back to Beginner)")
+            
+            # Check if beginner is exhausted to determine where we should be
+            if battle_bot.is_beginner_exhausted():
+                print("  Beginner is exhausted, should be on Intermediate")
+                battle_bot.current_difficulty = "intermediate"
+                print("✓ Bot state synced (back to Intermediate)")
+            else:
+                battle_bot.reset_to_beginner()
+                print("✓ Bot state synced (back to Beginner)")
             
             # Enable resume mode for next cycle
             resume_mode = True

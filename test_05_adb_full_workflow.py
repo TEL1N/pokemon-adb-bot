@@ -62,7 +62,7 @@ class RewardBattleBotADB:
     # ==================== NAVIGATION ====================
     
     def switch_to_difficulty(self, difficulty_name):
-        """Switch to a different difficulty (SIMPLIFIED)"""
+        """Switch to a different difficulty (CONDITIONAL SCROLLING)"""
         difficulty_buttons = self.config.get("difficulty_buttons", {})
         coords = tuple(difficulty_buttons.get(difficulty_name, (0, 0)))
         
@@ -72,15 +72,18 @@ class RewardBattleBotADB:
         print("  [Step 1/3] Pressing BACK to return to Solo Battles...")
         self.controller.press_back(delay=2)
         
-        # Step 2: Scroll down 2 times to reveal difficulties
-        print("  [Step 2/3] Scrolling to reveal difficulties...")
-        scroll_config = self.config.get("difficulty_scroll", {})
-        start = tuple(scroll_config.get("start", (0, 0)))
-        end = tuple(scroll_config.get("end", (0, 0)))
-        
-        for i in range(2):
-            print(f"    Scroll {i+1}/2")
-            self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=1000, delay=1)
+        # Step 2: CONDITIONAL SCROLL - Only scroll if NOT switching to Beginner
+        if difficulty_name != "beginner":
+            print("  [Step 2/3] Scrolling to reveal difficulties...")
+            scroll_config = self.config.get("difficulty_scroll", {})
+            start = tuple(scroll_config.get("start", (0, 0)))
+            end = tuple(scroll_config.get("end", (0, 0)))
+            
+            for i in range(2):
+                print(f"    Scroll {i+1}/2")
+                self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=1000, delay=1)
+        else:
+            print("  [Step 2/3] Skipping scroll (Beginner is already visible)")
         
         # Step 3: Click difficulty button
         print(f"  [Step 3/3] Clicking {difficulty_name.upper()} at {coords}...")
@@ -155,6 +158,9 @@ class RewardBattleBotADB:
         print("✓ Progress saved!")
     
     # ==================== EXPANSION SCANNING ====================
+    def is_beginner_exhausted(self):
+        """Check if Beginner difficulty is fully exhausted"""
+        return self.progress.is_difficulty_exhausted("beginner", EXPANSION_COUNTS)
     
     def scan_series_for_rewards(self, series_name, expansion_count):
         """
