@@ -234,7 +234,7 @@ class VisualCalibrator:
         print("\n📍 Difficulty buttons should now be visible")
         
         difficulties = {}
-        for diff_name in ["intermediate", "advanced", "expert"]:
+        for diff_name in ["beginner","intermediate", "advanced", "expert"]:
             pos = self.calibrate_with_test(
                 f"Calibration - {diff_name.upper()}",
                 f"📍 RIGHT CLICK on the {diff_name.upper()} difficulty button"

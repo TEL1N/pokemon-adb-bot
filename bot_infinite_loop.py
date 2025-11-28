@@ -21,7 +21,7 @@ def run_infinite_battle_loop():
     print("\n🤖 Bot Features:")
     print("  ✓ Runs inside emulator (your PC stays free!)")
     print("  ✓ Finds battles with rewards automatically")
-    print("  ✓ Searches all difficulties (Intermediate → Advanced → Expert)")
+    print("  ✓ Searches all difficulties (Beginner → Intermediate → Advanced → Expert)")
     print("  ✓ Searches all series (A + B)")
     print("  ✓ Tracks progress (never rechecks exhausted expansions)")
     print("  ✓ Starts battles with AUTO enabled")
@@ -108,8 +108,8 @@ def run_infinite_battle_loop():
             
             # CRITICAL: Reset bot's state after universal reset
             print("\n🔄 Syncing bot state with game state...")
-            battle_bot.reset_to_intermediate()
-            print("✓ Bot state synced (back to Intermediate)")
+            battle_bot.reset_to_beginner()
+            print("✓ Bot state synced (back to Beginner)")
             
             # Enable resume mode for next cycle
             resume_mode = True

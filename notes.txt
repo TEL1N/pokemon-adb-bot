@@ -1,6 +1,3 @@
-for card database:
-- cant look at the network packets to see 
-- must use cv
 
 for parralelization:
 email creation and log each one (for play store and maybe for saving pkmn)

@@ -34,7 +34,7 @@ class RewardBattleBotADB:
         
         # Track current game state
         self.current_series = "A"
-        self.current_difficulty = "intermediate"
+        self.current_difficulty = "beginner"
         
         # Track last battle location for resuming
         self.last_battle_location = None  # (difficulty, series, expansion_num)
@@ -90,12 +90,12 @@ class RewardBattleBotADB:
         self.current_difficulty = difficulty_name
         print(f"✓ Now on {difficulty_name.upper()} difficulty")
     
-    def reset_to_intermediate(self):
-        """Reset state after universal reset (game defaults to Intermediate)"""
+    def reset_to_beginner(self):
+        """Reset state after universal reset (game defaults to Beginner)"""
         print("\n--- Resetting state after universal reset ---")
-        self.current_difficulty = "intermediate"
+        self.current_difficulty = "beginner"
         self.current_series = "A"
-        print("✓ Bot state reset: Intermediate difficulty, A-series")
+        print("✓ Bot state reset: Beginner difficulty, A-series")
     
     def ensure_series(self, target_series):
         """Switch to A or B series if needed"""
@@ -290,7 +290,7 @@ class RewardBattleBotADB:
         if resume_from_battle and self.last_battle_location:
             print(f"RESUMING from: {self.last_battle_location}")
         else:
-            print("Will check: Intermediate → Advanced → Expert")
+            print("Will check: Beginner → Intermediate → Advanced → Expert")
             print("Each difficulty: A-series → B-series")
         
         print("\nStarting in 2 seconds...")
@@ -353,7 +353,7 @@ class RewardBattleBotADB:
             return
         
         # Check all difficulties in order
-        difficulties = ["intermediate", "advanced", "expert"]
+        difficulties = ["beginner","intermediate", "advanced", "expert"]
         start_idx = difficulties.index(self.current_difficulty) if resume_from_battle else 0
 
         for i in range(start_idx, len(difficulties)):

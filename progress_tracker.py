@@ -24,17 +24,18 @@ class ProgressTracker:
                 data = json.load(f)
                 print(f"Loaded progress: {PROGRESS_FILE}")
                 return data
-        else:
-            # Initialize empty progress
-            print("No progress file found, starting fresh")
-            return {
-                "intermediate_A": 0,
-                "intermediate_B": 0,
-                "advanced_A": 0,
-                "advanced_B": 0,
-                "expert_A": 0,
-                "expert_B": 0
-            }
+        # Initialize empty progress
+        print("No progress file found, starting fresh")
+        return {
+            "beginner_A": 0,
+            "beginner_B": 0,
+            "intermediate_A": 0,
+            "intermediate_B": 0,
+            "advanced_A": 0,
+            "advanced_B": 0,
+            "expert_A": 0,
+            "expert_B": 0
+        }
     
     def save_progress(self):
         """Save progress to file"""
@@ -112,13 +113,15 @@ class ProgressTracker:
     def reset_progress(self):
         """Clear all progress (start fresh)"""
         self.progress = {
-            "intermediate_A": 0,
-            "intermediate_B": 0,
-            "advanced_A": 0,
-            "advanced_B": 0,
-            "expert_A": 0,
-            "expert_B": 0
-        }
+        "beginner_A": 0,
+        "beginner_B": 0,
+        "intermediate_A": 0,
+        "intermediate_B": 0,
+        "advanced_A": 0,
+        "advanced_B": 0,
+        "expert_A": 0,
+        "expert_B": 0
+    }
         self.save_progress()
         print("Progress reset!")
     
@@ -127,7 +130,7 @@ class ProgressTracker:
         lines = []
         lines.append("Progress Summary:")
         
-        for difficulty in ["intermediate", "advanced", "expert"]:
+        for difficulty in ["beginner","intermediate", "advanced", "expert"]:
             lines.append(f"\n{difficulty.upper()}:")
             for series in ["A", "B"]:
                 key = self.get_key(difficulty, series)
