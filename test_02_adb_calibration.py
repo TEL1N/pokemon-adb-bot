@@ -443,7 +443,7 @@ def main():
     print("POKEMON TCG ADB - TEST 02: VISUAL CALIBRATION")
     print("="*60)
     
-    calibrator = VisualCalibrator("emulator-5556")
+    calibrator = VisualCalibrator(None)
     calibrator.run_full_calibration()
 
 
