@@ -11,7 +11,10 @@ from adb_controller import ADBController
 
 
 class BattleEndDetectorADB:
+    # CHANGE THIS LINE:
     def __init__(self, device_id=None):
+        self.adb = ADBController(device_id)
+        # ... rest of the code ...
         self.controller = ADBController(device_id)
         print("✓ Battle End Detector initialized (full screen white flash detection)")
     

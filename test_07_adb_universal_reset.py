@@ -10,7 +10,10 @@ from adb_controller import ADBController
 
 
 class UniversalResetADB:
+    # CHANGE THIS LINE:
     def __init__(self, device_id=None):
+        self.adb = ADBController(device_id)
+        # ... rest of the code ...
         self.controller = ADBController(device_id)
     
     def run_universal_reset(self):

@@ -24,7 +24,12 @@ EXPANSION_COUNTS = {
 
 
 class RewardBattleBotADB:
-    def __init__(self, device_id=None):
+    # CHANGE THIS LINE:
+    def __init__(self, device_id=None): 
+        # Pass device_id to the controller and tracker
+        self.adb = ADBController(device_id) 
+        self.tracker = ProgressTracker(device_id) 
+        self.device_id = device_id
         self.controller = ADBController(device_id)
         self.finder = BattleFinderADB(device_id)
         self.expansion_searcher = ExpansionSearcherADB(device_id)
