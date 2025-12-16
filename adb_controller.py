@@ -209,29 +209,24 @@ class ADBController:
         """
         Swipe with hold at end point to prevent flick/fling
         
-        FIXED: Swipe to end point, then do a tiny "hold" swipe at the same spot
-        This simulates holding your finger still before lifting
+        FIXED: Use a single slow swipe instead of two commands
+        The long duration prevents fling and avoids accidental tap detection
         
         Args:
             x1, y1: Start coordinates
             x2, y2: End coordinates
-            duration: Swipe duration in milliseconds for main movement
-            hold_time: How long to "hold" at end point (milliseconds)
+            duration: Base swipe duration in milliseconds
+            hold_time: Additional time to make swipe slower (prevents fling)
             delay: Delay after complete gesture (seconds)
         """
         print(f"  [ADB] Swipe with hold from ({x1}, {y1}) to ({x2}, {y2})")
         
-        # Part 1: Normal swipe to destination
-        self._run_adb_command([
-            "shell", "input", "swipe",
-            str(x1), str(y1), str(x2), str(y2), str(duration)
-        ])
+        # Single slow swipe - total duration prevents fling
+        total_duration = duration + hold_time
         
-        # Part 2: "Hold" at end point - swipe from end to end (no movement, just hold)
-        # This keeps the finger down at the end position
         self._run_adb_command([
             "shell", "input", "swipe",
-            str(x2), str(y2), str(x2), str(y2), str(hold_time)
+            str(x1), str(y1), str(x2), str(y2), str(total_duration)
         ])
         
         time.sleep(delay)

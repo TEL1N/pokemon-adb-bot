@@ -2,6 +2,7 @@
 """
 TEST 04: Expansion Navigation (ADB Version)
 Searches through expansion packs when no rewards on main screen
+FIXED: Added longer delay after opening expansion to prevent misclicks
 """
 
 import json
@@ -15,11 +16,11 @@ MAX_DOWN_SCANS_PER_EXPANSION = 9
 
 class ExpansionSearcherADB:
     def __init__(self, device_id=None):
-        self.controller = ADBController(device_id)  # Auto-detect if None
-        self.finder = BattleFinderADB(device_id)    # Auto-detect if None
+        self.controller = ADBController(device_id)
+        self.finder = BattleFinderADB(device_id)
         self.config = self.load_config()
         self.checked_expansions = set()
-        self.max_expansions = 12  # Adjust if needed
+        self.max_expansions = 12
     
     def load_config(self):
         """Load calibrated coordinates"""
@@ -49,8 +50,7 @@ class ExpansionSearcherADB:
         
         for i in range(times):
             print(f"  ↕ Expansion scroll gesture {i+1}/{times}")
-            # Swipe 400ms + hold 1000ms = 1400ms total
-            self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=1000, delay=1.2)
+            self.controller.swipe_with_hold(*start, *end, duration=400, hold_time=500, delay=1.2)
             time.sleep(0.5)
     
     def open_visible_expansion(self, visible_index):
@@ -63,7 +63,10 @@ class ExpansionSearcherADB:
         pos = tuple(slots[visible_index])
         print(f"Opening expansion slot {visible_index + 1} at {pos}...")
         self.controller.tap(*pos)
-        time.sleep(3)
+        
+        # FIXED: Longer delay to ensure expansion fully loads
+        # This prevents the fast scroll from clicking battles
+        time.sleep(4)
         return True
     
     def switch_series(self, series_name):
@@ -116,9 +119,13 @@ class ExpansionSearcherADB:
         
         # Calculate scroll coordinates INSIDE the battle list
         start_x = x + w // 2
-        start_y = y + int(h * 0.8)  # Bottom of list
+        start_y = y + int(h * 0.8)
         end_x = start_x
-        end_y = y + int(h * 0.2)    # Top of list
+        end_y = y + int(h * 0.2)
+        
+        # FIXED: Wait a moment before scrolling to ensure screen is ready
+        print("  Waiting for expansion to load...")
+        time.sleep(1)
         
         # OPTIMIZATION: 3 fast scrolls to bottom (no hold, pure speed)
         print("  Fast scrolling to bottom (where rewards are)...")
@@ -127,12 +134,12 @@ class ExpansionSearcherADB:
             self.controller.swipe(
                 start_x, start_y,
                 end_x, end_y,
-                duration=200  # FAST! No hold time
+                duration=200
             )
-            time.sleep(0.2)  # Tiny delay between scrolls
+            time.sleep(0.3)  # Slightly longer delay between scrolls
         
         print("\n  Waiting for battles to settle...")
-        time.sleep(1.0)  # Let animations finish
+        time.sleep(1.0)
         
         # Single check at bottom
         print("  Checking for rewards at bottom...")
