@@ -2,6 +2,7 @@
 """
 ADB Controller - Replaces PyAutoGUI for emulator control
 Supports auto-detection and multiple devices
+UPDATED: Fixed swipe_with_hold to prevent fling
 """
 
 import subprocess
@@ -83,11 +84,13 @@ class ADBController:
         Returns device_id if successful, None otherwise
         """
         common_ports = [
+            "127.0.0.1:16384",
+            "127.0.0.1:16416",
+            "127.0.0.1:16448",
+            "127.0.0.1:16480",
+            "127.0.0.1:16512",
             "127.0.0.1:7555",
             "127.0.0.1:5555",
-            "127.0.0.1:5556",
-            "127.0.0.1:16384",
-            "127.0.0.1:16416"
         ]
         
         for port in common_ports:
@@ -202,27 +205,53 @@ class ADBController:
         ])
         time.sleep(delay)
     
-    def swipe_with_hold(self, x1, y1, x2, y2, duration=400, hold_time=1000, delay=0.5):
+    def swipe_with_hold(self, x1, y1, x2, y2, duration=400, hold_time=500, delay=0.5):
         """
-        Swipe with hold at end point to prevent flick
+        Swipe with hold at end point to prevent flick/fling
+        
+        FIXED: Swipe to end point, then do a tiny "hold" swipe at the same spot
+        This simulates holding your finger still before lifting
         
         Args:
             x1, y1: Start coordinates
             x2, y2: End coordinates
-            duration: Swipe duration in milliseconds
-            hold_time: Time to hold at end before release (milliseconds)
+            duration: Swipe duration in milliseconds for main movement
+            hold_time: How long to "hold" at end point (milliseconds)
             delay: Delay after complete gesture (seconds)
         """
         print(f"  [ADB] Swipe with hold from ({x1}, {y1}) to ({x2}, {y2})")
         
-        # Total duration includes both swipe and hold
-        total_duration = duration + hold_time
-        
+        # Part 1: Normal swipe to destination
         self._run_adb_command([
             "shell", "input", "swipe",
-            str(x1), str(y1), str(x2), str(y2), str(total_duration)
+            str(x1), str(y1), str(x2), str(y2), str(duration)
         ])
         
+        # Part 2: "Hold" at end point - swipe from end to end (no movement, just hold)
+        # This keeps the finger down at the end position
+        self._run_adb_command([
+            "shell", "input", "swipe",
+            str(x2), str(y2), str(x2), str(y2), str(hold_time)
+        ])
+        
+        time.sleep(delay)
+    
+    def swipe_slow(self, x1, y1, x2, y2, duration=1000, delay=0.5):
+        """
+        Slow swipe that won't trigger fling
+        Use this for scrolling where you need precise control
+        
+        Args:
+            x1, y1: Start coordinates
+            x2, y2: End coordinates
+            duration: Swipe duration (1000ms = 1 second, slow enough to prevent fling)
+            delay: Delay after swipe
+        """
+        print(f"  [ADB] Slow swipe from ({x1}, {y1}) to ({x2}, {y2})")
+        self._run_adb_command([
+            "shell", "input", "swipe",
+            str(x1), str(y1), str(x2), str(y2), str(duration)
+        ])
         time.sleep(delay)
     
     def press_key(self, keycode, delay=0.3):

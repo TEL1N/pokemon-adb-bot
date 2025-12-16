@@ -2,6 +2,7 @@
 """
 TEST 06: Battle End Detection (ADB Version)
 Simple and reliable: Detect FULL SCREEN white flash (single check)
+FIXED: Press ESCAPE every 5 seconds to help trigger white screen if missed
 """
 
 import cv2
@@ -11,10 +12,8 @@ from adb_controller import ADBController
 
 
 class BattleEndDetectorADB:
-    # CHANGE THIS LINE:
     def __init__(self, device_id=None):
         self.adb = ADBController(device_id)
-        # ... rest of the code ...
         self.controller = ADBController(device_id)
         print("✓ Battle End Detector initialized (full screen white flash detection)")
     
@@ -49,6 +48,9 @@ class BattleEndDetectorADB:
         """
         Monitor for battle end using full screen white detection
         Single check - no verification needed (no false positives during battle)
+        
+        FIXED: Press ESCAPE every 5 seconds to trigger white screen if missed
+        
         wait_before_start: Seconds to wait before starting monitoring
         """
         print(f"\nWaiting {wait_before_start} seconds before monitoring starts...")
@@ -58,12 +60,22 @@ class BattleEndDetectorADB:
         
         print("\n--- Monitoring for Battle End (Full Screen White) ---")
         print("Detection: ENTIRE screen turns white → Battle ended")
-        print("Single check (no false positives during battle)\n")
+        print("Pressing ESCAPE every 5 seconds to help trigger detection\n")
         
         check_count = 0
+        last_escape_time = time.time()
+        escape_interval = 5  # Press escape every 5 seconds
+        
         while True:
             try:
                 check_count += 1
+                current_time = time.time()
+                
+                # Press ESCAPE every 5 seconds to help trigger white screen
+                if current_time - last_escape_time >= escape_interval:
+                    print(f"\n  [Pressing ESCAPE to check...]")
+                    self.controller.press_back(delay=0.3)
+                    last_escape_time = current_time
                 
                 # Check for full screen white - if detected, battle is over!
                 if self.detect_full_screen_white(threshold=200, white_percentage=0.90):
@@ -71,7 +83,7 @@ class BattleEndDetectorADB:
                     print("✓✓✓ BATTLE END CONFIRMED!")
                     return True
                 
-                # Print periodic status (every 10 seconds)
+                # Print periodic status (every 20 checks)
                 if check_count % 20 == 0:
                     print(f"\n[Check #{check_count}] Still monitoring...")
                 
@@ -86,9 +98,9 @@ def main():
     print("POKEMON TCG ADB - TEST 06: BATTLE END DETECTION")
     print("="*60)
     
-    print("\nSimple Full Screen White Detection:")
+    print("\nFull Screen White Detection + ESCAPE key helper:")
     print("  - Detects when ENTIRE screen turns white")
-    print("  - Single check (instant detection)")
+    print("  - Presses ESCAPE every 5 seconds to help trigger")
     print("  - Works for both victory and defeat")
     
     print("\nSetup:")

@@ -1,66 +1,48 @@
 #!/usr/bin/env python3
 """
-Progress Tracker - Multi-Instance Supported & Fixed
+Progress Tracker - IN-MEMORY ONLY for Parallelization
+Each bot instance gets its own tracker that resets when bot closes
+No file saving - ports can change between sessions
 """
-
-import json
-from pathlib import Path
 
 
 class ProgressTracker:
     def __init__(self, device_id=None):
-        # Create a unique filename for this device
-        if device_id:
-            # Sanitize device ID (replace : with _)
-            sanitized_id = device_id.replace(":", "_").replace(".", "_")
-            self.filename = f"expansion_progress_{sanitized_id}.json"
-        else:
-            self.filename = "expansion_progress.json"
-            
-        print(f"[{device_id or 'Default'}] Using progress file: {self.filename}")
-        self.progress = self.load_progress()
-    
-    def load_progress(self):
-        """Load progress from file"""
-        path = Path(self.filename)
+        """
+        Initialize progress tracker (in-memory only)
         
-        if path.exists():
-            try:
-                with open(path, 'r') as f:
-                    data = json.load(f)
-                    return data
-            except:
-                print(f"Error loading {self.filename}, starting fresh")
+        Args:
+            device_id: For logging purposes only, not used for file naming
+        """
+        self.device_id = device_id or "unknown"
+        print(f"[{self.device_id}] Progress tracker initialized (in-memory, resets on close)")
         
-        # Initialize empty progress
-        return {
+        # In-memory progress - starts fresh every time
+        self.progress = {
             "beginner_A": 0, "beginner_B": 0,
             "intermediate_A": 0, "intermediate_B": 0,
             "advanced_A": 0, "advanced_B": 0,
             "expert_A": 0, "expert_B": 0
         }
     
-    def save_progress(self):
-        """Save progress to file"""
-        with open(self.filename, 'w') as f:
-            json.dump(self.progress, f, indent=2)
-    
     def get_key(self, difficulty, series):
         return f"{difficulty}_{series}"
     
     def get_start_position(self, difficulty, series):
+        """Get which expansion to start from (1-indexed)"""
         key = self.get_key(difficulty, series)
         checked_count = self.progress.get(key, 0)
         return checked_count + 1
     
     def mark_checked(self, difficulty, series, expansion_num):
+        """Mark an expansion as checked (no rewards found)"""
         key = self.get_key(difficulty, series)
         current = self.progress.get(key, 0)
         
-        # Logic: Always save the highest number we've reached
+        # Save the highest number we've reached
         if expansion_num >= current + 1:
             self.progress[key] = expansion_num
-            self.save_progress()
+            print(f"  [{self.device_id}] Marked {key} expansion #{expansion_num} as checked")
     
     def is_series_exhausted(self, difficulty, series, total_expansions):
         """Check if a specific series is fully checked"""
@@ -72,7 +54,7 @@ class ProgressTracker:
         """
         Check if all series in a difficulty are exhausted
         Args:
-            difficulty: intermediate, advanced, etc.
+            difficulty: beginner, intermediate, advanced, expert
             expansion_counts: dict like {'A': 11, 'B': 1}
         """
         for series, count in expansion_counts.items():
@@ -81,8 +63,7 @@ class ProgressTracker:
         return True
     
     def is_fully_exhausted(self):
-        """Check if EVERYTHING is exhausted"""
-        # Hardcoded expansion counts (A=11, B=1 for now)
+        """Check if ALL difficulties and series are exhausted"""
         expansion_counts = {"A": 11, "B": 1}
         difficulties = ["beginner", "intermediate", "advanced", "expert"]
         
@@ -93,5 +74,10 @@ class ProgressTracker:
         return True
         
     def reset_progress(self):
+        """Reset all progress to zero"""
         self.progress = {k: 0 for k in self.progress}
-        self.save_progress()
+        print(f"  [{self.device_id}] Progress reset to zero")
+    
+    def get_status(self):
+        """Get current progress status for logging"""
+        return dict(self.progress)

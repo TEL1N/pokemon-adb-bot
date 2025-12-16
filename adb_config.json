@@ -1,96 +1,100 @@
 {
-  "auto_button": [
-    702,
-    1504
-  ],
-  "battle_button": [
-    443,
-    1371
+  "pokemon_app_icon": [
+    194,
+    492
   ],
   "battles_tab": [
-    617,
-    1540
+    733,
+    1849
   ],
   "solo_battle_button": [
-    666,
-    1178
+    789,
+    1418
   ],
   "difficulty_scroll": {
     "start": [
-      454,
-      1157
+      544,
+      1384
     ],
     "end": [
-      464,
-      314
+      552,
+      198
     ]
   },
   "difficulty_buttons": {
+    "beginner": [
+      526,
+      580
+    ],
     "intermediate": [
-      464,
-      248
+      533,
+      317
     ],
     "advanced": [
-      458,
-      619
+      522,
+      706
     ],
     "expert": [
-      461,
-      1042
+      520,
+      1224
     ]
   },
   "expansions_button": [
-    746,
-    506
+    900,
+    603
   ],
   "series_buttons": {
     "B": [
-      203,
-      1371
+      221,
+      1636
     ],
     "A": [
-      531,
-      1370
+      625,
+      1640
     ]
   },
   "expansion_scroll": {
     "start": [
-      481,
-      1014
+      520,
+      1160
     ],
     "end": [
-      453,
-      779
+      503,
+      727
     ]
   },
   "expansion_slots": [
     [
-      461,
-      393
+      512,
+      469
     ],
     [
-      469,
-      751
+      520,
+      910
     ],
     [
-      459,
-      1130
+      524,
+      1344
     ]
   ],
-  "battle_list_region": [
-    470,
-    562,
-    378,
-    921
+  "auto_button": [
+    834,
+    1804
   ],
-  "pokemon_app_icon": [
-    164,
-    395
+  "battle_button": [
+    541,
+    1642
+  ],
+  "battle_list_region": [
+    605,
+    742,
+    429,
+    845
   ],
   "reward_detection_region": [
-    569,
-    571,
-    293,
-    805
+    684,
+    1009,
+    361,
+    612
   ]
 }
