@@ -1,4 +1,0 @@
-
-for parralelization:
-email creation and log each one (for play store and maybe for saving pkmn)
-- mumuplayer script recording to use for each one and initalize 

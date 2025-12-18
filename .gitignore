@@ -1,0 +1,25 @@
+# Runtime data
+expansion_progress.json
+adb_config_*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Screenshots
+*.png
+*.jpg
+test_*.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
